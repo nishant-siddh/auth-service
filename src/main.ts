@@ -1,29 +1,43 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { setupSwagger } from './config/swagger.config';
 import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
+import * as dotenv from 'dotenv';
 
 async function bootstrap() {
+  dotenv.config(); // load .env
+
   const app = await NestFactory.create(AppModule);
+
   app.enableCors({
-    origin: ['http://localhost:3000', 'https://mydomain.com'],
+    origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // strip unknown properties
+      transform: true,
+      whitelist: true,
       forbidNonWhitelisted: true,
-      transform: true, // transform to DTO instances
     }),
   );
 
   app.use(helmet());
 
-  setupSwagger(app);
+  const config = new DocumentBuilder()
+    .setTitle('Shipseva API')
+    .setDescription('Shipseva API documentation')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('auth/api-doc', app, documentFactory);
 
-  await app.listen(process.env.PORT || 4000);
+  const PORT = process.env.AUTH_SERVICE_PORT || 80;
+  await app.listen(PORT);
+  console.log(`🚀 Service is running on http://localhost:${PORT}`);
 }
+
 bootstrap();
