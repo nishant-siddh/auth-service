@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import * as dotenv from 'dotenv';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   dotenv.config(); // load .env
@@ -23,6 +24,8 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+
+  app.use(cookieParser());
 
   app.use(helmet());
 
