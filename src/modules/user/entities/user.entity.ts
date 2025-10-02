@@ -1,8 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
 
 export enum UserRole {
-  USER = 'user',
-  ADMIN = 'admin',
+  INDIVIDUAL = 'individual',
+  AGENCY = 'agency',
 }
 
 @Entity()
@@ -13,16 +13,19 @@ export class User {
   @Column()
   name: string;
 
-  @Column()
+  @Column({ unique: true, nullable: true })
   phone: string;
   
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: true })
   email: string;
+
+  @Column({ name: 'company_name', nullable: true })
+  companyName: string;
 
   @Column()
   password: string;
 
-  @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
+  @Column({ type: 'enum', enum: UserRole, default: UserRole.INDIVIDUAL })
   role: UserRole;
 
   @CreateDateColumn({ name: 'created_at' , type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

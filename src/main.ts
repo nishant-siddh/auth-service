@@ -33,7 +33,17 @@ async function bootstrap() {
     .setTitle('Shipseva API')
     .setDescription('Shipseva API documentation')
     .setVersion('1.0')
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth' // This name is used in @ApiSecurity() decorator
+    )
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('auth/api-doc', app, documentFactory);

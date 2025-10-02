@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
@@ -15,11 +15,24 @@ export class UserService {
   ) {}
 
   async create(registerDto: RegisterDto): Promise<User> {
+    if (registerDto.role === UserRole.AGENCY) {
+      if (!registerDto.companyName?.trim()) {
+        throw new BadRequestException('Company name is required for agency registration');
+      }
+    } else if (registerDto.role === UserRole.INDIVIDUAL) {
+      registerDto.companyName = undefined;
+    }
+
+    if(registerDto.name) registerDto.name = registerDto.name.trim();
+    if(registerDto.email) registerDto.email = registerDto.email.toLowerCase();
+    if(registerDto.phone) registerDto.phone = registerDto.phone.trim();
+    if(registerDto.companyName) registerDto.companyName = registerDto.companyName.trim();
+
     const { password } = registerDto;
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password?.trim(), 10);
     const user = this.usersRepository.create({
       ...registerDto,
-      password: hashedPassword,
+      password: hashedPassword
     });
     return this.usersRepository.save(user);
   }
@@ -28,6 +41,7 @@ export class UserService {
     const {
       name,
       email,
+      phone,
       role,
       limit = 10,
       page = 1,
@@ -42,8 +56,12 @@ export class UserService {
       query.andWhere('user.name ILIKE :name', { name: `%${name}%` });
     }
 
-    if (email) {
-      query.andWhere('user.email ILIKE :email', { email: `%${email}%` });
+    if (email && phone) {
+      query.andWhere('(user.email = :email OR user.phone = :phone)', { email, phone });
+    } else if (email) {
+      query.andWhere('user.email = :email', { email });
+    } else if (phone) {
+      query.andWhere('user.phone = :phone', { phone });
     }
 
     if (role) {

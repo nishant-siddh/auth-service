@@ -9,7 +9,6 @@ import { JwtAuthGuard } from '../guard/jwt-auth.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { ApiBearerAuth } from '@nestjs/swagger';
 
-@ApiBearerAuth()
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -39,13 +38,14 @@ export class AuthController {
   @Post('login')
   async login(@Body() loginDto: LoginDto, @Res() res: Response) {
     const { user, tokens } = await this.authService.login(loginDto);
-
+    console.log(tokens);
+    
     // set cookies
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 1000 * 60 * 15,
+      maxAge: 1000 * 60 * 60 * 24 * 1,
     });
 
     res.cookie('refreshToken', tokens.refreshToken, {
@@ -74,6 +74,8 @@ export class AuthController {
     return res.json({ message: 'Token refreshed' });
   }
 
+  
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post('admin-only')

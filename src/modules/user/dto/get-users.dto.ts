@@ -29,15 +29,23 @@ export class GetUsersFilterDto {
   @IsEmail()
   @IsOptional()
   email?: string;
+  
+  @ApiProperty({
+    description: 'The phone of the user',
+    example: '+919656576787',
+    required: false,
+  })
+  @IsOptional()
+  phone?: string;
 
   @ApiProperty({
     description: 'The role of the user',
-    example: UserRole.USER,
+    example: UserRole.INDIVIDUAL,
     enum: UserRole,
     required: false,
   })
   @IsOptional()
-  @IsEnum(UserRole, { message: 'role must be either user or admin' })
+  @IsEnum(UserRole, { message: 'role must be either individual or agnecy' })
   role?: UserRole;
 
   @ApiProperty({

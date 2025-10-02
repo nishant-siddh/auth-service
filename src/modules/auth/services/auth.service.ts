@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UserService } from 'src/modules/user/services/user.service';
@@ -14,20 +14,33 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const existingUser = await this.usersService.findByEmail(registerDto.email);
-    if (existingUser) throw new UnauthorizedException('Email already exists');
+    if(!registerDto.email && !registerDto.phone) {
+      throw new BadRequestException('Either email or phone number is required');
+    }
+    const existingUser = await this.usersService.getUsers({email: registerDto.email, phone: registerDto.phone});
+    if(existingUser?.data?.length > 0) {
+      throw new BadRequestException('User with given details already exists');
+    }
     const user = await this.usersService.create(registerDto);
     const tokens = this.generateTokens(user);
     return { user, tokens };
   }
 
   async validateUser(
-    email: string,
+    identifier: string,
     password: string,
     userRole: UserRole,
   ): Promise<User> {
-    const user = await this.usersService.findByEmail(email);
-    console.log(user, 'this is user');
+    let user: User | null = null;
+    if(!identifier?.trim()){
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    if(identifier?.includes('@')){
+      identifier = identifier.toLowerCase();
+      user = await this.usersService.findByEmail(identifier);
+    } else {
+      user = await this.usersService.getUsers({ phone: identifier }).then(res => res?.data[0]);
+    }
     if (!user) throw new UnauthorizedException('Invalid credentials');
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) throw new UnauthorizedException('Invalid credentials');
@@ -39,7 +52,7 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     const user = await this.validateUser(
-      loginDto.email,
+      loginDto.identifier,
       loginDto.password,
       loginDto.role,
     );
