@@ -13,9 +13,4 @@ export class LoginDto {
   @ApiProperty({ description: 'The password of the user', example: '123456' })
   @IsString()
   password: string;
-
-  @ApiProperty({ description: 'The role of the user', example: 'user' })
-  @IsString()
-  @IsEnum(UserRole, { message: 'role must be either user or agnecy' })
-  role: UserRole;
 }

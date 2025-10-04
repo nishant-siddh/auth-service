@@ -10,15 +10,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
-import { UserRole } from '../entities/user.entity';
 import { GetUsersFilterDto } from '../dto/get-users.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/modules/auth/guard/jwt-auth.guard';
+import { JwtCookieGuard } from 'src/modules/auth/guard/jwt-cookie.guard';
 
-
-@ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+@UseGuards(JwtCookieGuard)
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}

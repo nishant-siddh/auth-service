@@ -43,6 +43,7 @@ export class UserService {
       email,
       phone,
       role,
+      isVerified,
       limit = 10,
       page = 1,
       sortBy = SortBy.CREATED_AT,
@@ -50,6 +51,18 @@ export class UserService {
     } = filterDto;
 
     const query = this.usersRepository.createQueryBuilder('user');
+
+    query.select([
+      'user.id',
+      'user.name',
+      'user.phone',
+      'user.email',
+      'user.companyName',
+      'user.isVerified',
+      'user.role',
+      'user.createdAt',
+      'user.updatedAt'
+    ]);
 
     // Filters
     if (name) {
@@ -62,6 +75,10 @@ export class UserService {
       query.andWhere('user.email = :email', { email });
     } else if (phone) {
       query.andWhere('user.phone = :phone', { phone });
+    }
+
+    if (isVerified) {
+      query.andWhere('user.isVerified = :isVerified', { isVerified });
     }
 
     if (role) {
@@ -92,7 +109,7 @@ export class UserService {
   async findOne(id: string) {
     const user = await this.usersRepository.findOne({
       where: { id },
-      select: ['id', 'name', 'phone', 'email', 'role'],
+      select: ['id', 'name', 'phone', 'email', 'role', 'companyName', 'createdAt', 'updatedAt', 'isVerified'],
     });
 
     if (!user) throw new NotFoundException(`User with ID ${id} not found`);

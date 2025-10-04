@@ -37,6 +37,14 @@ export class GetUsersFilterDto {
   })
   @IsOptional()
   phone?: string;
+  
+  @ApiProperty({
+    description: 'Filter by verification status',
+    example: true,
+    required: false,
+  })
+  @IsOptional()
+  isVerified?: boolean;
 
   @ApiProperty({
     description: 'The role of the user',

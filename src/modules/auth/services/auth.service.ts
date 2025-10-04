@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UserService } from 'src/modules/user/services/user.service';
 import { RegisterDto } from '../dto/register.dto';
-import { User, UserRole } from 'src/modules/user/entities/user.entity';
+import { User } from 'src/modules/user/entities/user.entity';
 import { LoginDto } from '../dto/login.dto';
 
 @Injectable()
@@ -23,13 +23,12 @@ export class AuthService {
     }
     const user = await this.usersService.create(registerDto);
     const tokens = this.generateTokens(user);
-    return { user, tokens };
+    return { tokens };
   }
 
   async validateUser(
     identifier: string,
-    password: string,
-    userRole: UserRole,
+    password: string
   ): Promise<User> {
     let user: User | null = null;
     if(!identifier?.trim()){
@@ -44,9 +43,9 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('Invalid credentials');
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) throw new UnauthorizedException('Invalid credentials');
-    if (user.role !== userRole) {
-      throw new UnauthorizedException('Insufficient permissions');
-    }
+
+    // for now only verified users can login but this will be changed later
+    if(!user.isVerified) throw new UnauthorizedException('User is not verified');
     return user;
   }
 
@@ -54,15 +53,14 @@ export class AuthService {
     const user = await this.validateUser(
       loginDto.identifier,
       loginDto.password,
-      loginDto.role,
     );
     const tokens = this.generateTokens(user);
-    return { user, tokens };
+    return { tokens };
   }
 
   async refreshTokens(refreshToken: string) {
     try {
-      const payload = this.jwtService.verify(refreshToken, {
+      const payload = await this.jwtService.verifyAsync(refreshToken, {
         secret: process.env.JWT_REFRESH_SECRET,
       });
       const user = await this.usersService.findOne(payload.sub);
@@ -86,4 +84,5 @@ export class AuthService {
       }),
     };
   }
+  
 }

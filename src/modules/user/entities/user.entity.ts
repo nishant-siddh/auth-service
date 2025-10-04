@@ -27,9 +27,12 @@ export class User {
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.INDIVIDUAL })
   role: UserRole;
+  
+  @Column({ name: 'is_verified', default: false })
+  isVerified: boolean;
 
   @CreateDateColumn({ name: 'created_at' , type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  created_at: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({
     name: 'updated_at',
@@ -37,8 +40,8 @@ export class User {
     default: () => 'CURRENT_TIMESTAMP',
     onUpdate: 'CURRENT_TIMESTAMP',
   })
-  updated_at: Date;
+  updatedAt: Date;
 
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
-  deleted_at: Date | null;
+  deletedAt: Date | null;
 }
