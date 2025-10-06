@@ -5,9 +5,10 @@ import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import { RolesGuard } from '../guard/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtCookieGuard } from '../guard/jwt-cookie.guard';
 
+@ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -88,6 +89,7 @@ export class AuthController {
 
     return res.json({ message: 'Tokens refreshed successfully' });
   }
+
 
   @ApiBearerAuth()
   @UseGuards(JwtCookieGuard, RolesGuard)

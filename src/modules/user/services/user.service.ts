@@ -148,4 +148,29 @@ export class UserService {
 
     return this.usersRepository.save(user);
   }
+
+  async getCurrentUser(userFromToken: any): Promise<User> {
+    // The userFromToken contains the JWT payload (sub, email, role)
+    // We need to fetch the full user data from the database
+    const user = await this.usersRepository.findOne({
+      where: { id: userFromToken.sub },
+      select: [
+        'id', 
+        'name', 
+        'phone', 
+        'email', 
+        'role', 
+        'companyName', 
+        'isVerified', 
+        'createdAt', 
+        'updatedAt'
+      ],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
 }
