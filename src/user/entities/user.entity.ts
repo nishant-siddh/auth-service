@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
+import { Kyc } from 'src/kyc/entities/kyc.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToMany } from 'typeorm';
 
 export enum UserRole {
   INDIVIDUAL = 'individual',
@@ -30,6 +31,9 @@ export class User {
   
   @Column({ name: 'is_verified', default: false })
   isVerified: boolean;
+
+  @OneToMany(() => Kyc, (kyc) => kyc.user)
+  kycRecords: Kyc[];
 
   @CreateDateColumn({ name: 'created_at' , type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;

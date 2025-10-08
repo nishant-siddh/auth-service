@@ -3,9 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User, UserRole } from '../entities/user.entity';
-import { RegisterDto } from 'src/modules/auth/dto/register.dto';
 import { GetUsersFilterDto, SortBy, SortOrder } from '../dto/get-users.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { RegisterDto } from 'src/auth/dto/register.dto';
 
 @Injectable()
 export class UserService {
@@ -37,7 +37,7 @@ export class UserService {
     return this.usersRepository.save(user);
   }
 
-  async getUsers(filterDto: GetUsersFilterDto) {
+  async getUsers(filterDto: GetUsersFilterDto): Promise<{ data: User[]; totalRecords: number; currentPage: number }> {
     const {
       name,
       email,
@@ -123,6 +123,12 @@ export class UserService {
     });
   }
 
+  async findByPhone(phone: string): Promise<User | null> {
+    return this.usersRepository.findOne({
+      where: { phone },
+    });
+  }
+
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
     if (!user) {
@@ -150,22 +156,7 @@ export class UserService {
   }
 
   async getCurrentUser(userFromToken: any): Promise<User> {
-    // The userFromToken contains the JWT payload (sub, email, role)
-    // We need to fetch the full user data from the database
-    const user = await this.usersRepository.findOne({
-      where: { id: userFromToken.sub },
-      select: [
-        'id', 
-        'name', 
-        'phone', 
-        'email', 
-        'role', 
-        'companyName', 
-        'isVerified', 
-        'createdAt', 
-        'updatedAt'
-      ],
-    });
+    const user = await this.findOne(userFromToken.sub);
 
     if (!user) {
       throw new NotFoundException('User not found');

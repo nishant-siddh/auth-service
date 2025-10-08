@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
-import { UserRole } from 'src/modules/user/entities/user.entity';
+import { UserRole } from '../entities/user.entity';
 
 export enum SortBy {
-  CREATED_AT = 'created_at',
+  CREATED_AT = 'createdAt',
 }
 
 export enum SortOrder {
@@ -53,7 +53,7 @@ export class GetUsersFilterDto {
     required: false,
   })
   @IsOptional()
-  @IsEnum(UserRole, { message: 'role must be either individual or agnecy' })
+  @IsEnum(UserRole, { message: 'role must be either individual or agency' })
   role?: UserRole;
 
   @ApiProperty({

@@ -16,7 +16,7 @@ import { UserService } from '../services/user.service';
 import { GetUsersFilterDto } from '../dto/get-users.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtCookieGuard } from 'src/modules/auth/guard/jwt-cookie.guard';
+import { JwtCookieGuard } from 'src/auth/guard/jwt-cookie.guard';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -26,17 +26,46 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
+  @ApiOperation({ 
+    summary: 'Get all users list',
+    description: 'Retrieves the full profile information of all users'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of users retrieved successfully',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', example: 'uuid' },
+          name: { type: 'string', example: 'John Doe' },
+          email: { type: 'string', example: 'john@example.com' },
+          phone: { type: 'string', example: '+1234567890' },
+          role: { type: 'string', enum: ['individual', 'agency'] },
+          companyName: { type: 'string', nullable: true },
+          isVerified: { type: 'boolean' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' }
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or expired token'
+  })
   async findAll(@Query() filterDto: GetUsersFilterDto) {
     return await this.userService.getUsers(filterDto);
   }
 
   @Get('/get-current-user')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get current user profile',
     description: 'Retrieves the full profile information of the currently authenticated user'
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'User profile retrieved successfully',
     schema: {
       type: 'object',
@@ -67,11 +96,19 @@ export class UserController {
   }
 
   @Patch(':user_id')
+  @ApiOperation({ 
+    summary: 'Update user profile',
+    description: 'Updates the profile information of a specific user'
+  })
   update(@Param('user_id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.update(id, updateUserDto);
   }
 
   @Delete(':user_id')
+  @ApiOperation({
+    summary: 'Delete user',
+    description: 'Deletes a specific user from the system'
+  })
   remove(@Param('user_id') id: string) {
     return this.userService.remove(id);
   }
@@ -93,7 +130,6 @@ export class UserController {
     }
   })
   async logout(@Res() res: Response) {
-    // Clear the authentication cookies
     res.clearCookie('accessToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

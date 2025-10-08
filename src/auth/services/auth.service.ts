@@ -1,10 +1,10 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { UserService } from 'src/modules/user/services/user.service';
 import { RegisterDto } from '../dto/register.dto';
-import { User } from 'src/modules/user/entities/user.entity';
 import { LoginDto } from '../dto/login.dto';
+import { UserService } from 'src/user/services/user.service';
+import { User } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -38,9 +38,10 @@ export class AuthService {
       identifier = identifier.toLowerCase();
       user = await this.usersService.findByEmail(identifier);
     } else {
-      user = await this.usersService.getUsers({ phone: identifier }).then(res => res?.data[0]);
+      user = await this.usersService.findByPhone(identifier);
     }
     if (!user) throw new UnauthorizedException('Invalid credentials');
+    console.log(user.password, password, 'bcrypt compare');
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) throw new UnauthorizedException('Invalid credentials');
 
