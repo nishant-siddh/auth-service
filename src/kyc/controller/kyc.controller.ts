@@ -4,7 +4,6 @@ import { KycService } from '../service/kyc.service';
 import { Kyc } from '../entities/kyc.entity';
 import { CreateKycDto } from '../dto/create-kyc.dto';
 import { UpdateKycDto } from '../dto/update-kyc.dto';
-import { CreateKycBulkDto } from '../dto/bulk-upload-kyc.dto';
 import { JwtCookieGuard } from 'src/auth/guard/jwt-cookie.guard';
 import { GetKycFilterDto } from '../dto/get-all-kyc.dto';
 
@@ -22,13 +21,12 @@ export class KycController {
     return this.kycService.create(createKycDto, req.user);
   }
 
-  @Post('bulk')
-  @ApiOperation({ summary: 'Submit multiple KYC documents at once' })
-  @ApiResponse({ status: 201, description: 'KYC documents submitted', type: [Kyc] })
-  createBulk(@Body() createKycBulkDto: CreateKycBulkDto, @Request() req) {
-    return this.kycService.createBulk(createKycBulkDto, req.user);
-  }
-
+  // @Post('bulk')
+  // @ApiOperation({ summary: 'Submit multiple KYC documents at once' })
+  // @ApiResponse({ status: 201, description: 'KYC documents submitted', type: [Kyc] })
+  // createBulk(@Body() createKycBulkDto: CreateKycBulkDto, @Request() req) {
+  //   return this.kycService.createBulk(createKycBulkDto, req.user);
+  // }
 
   @Get()
   @ApiOperation({ summary: 'Get all KYC records' })

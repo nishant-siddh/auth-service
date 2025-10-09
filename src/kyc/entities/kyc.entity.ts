@@ -8,11 +8,22 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
 } from 'typeorm';
+import { Aadhar } from './aadhar.entity';
+import { Pan } from './pan.entity';
 
 export enum KycStatus {
   PENDING = 'pending',
   VERIFIED = 'verified',
   REJECTED = 'rejected',
+}
+
+export enum BusinessType {
+  INDIVIDUAL = 'individual',
+  COMPANY = 'company',
+  PARTNERSHIP = 'partnership',
+  LLP = 'llp',
+  TRUST = 'trust',
+  OTHER = 'other',
 }
 
 @Entity()
@@ -23,12 +34,42 @@ export class Kyc {
   @ManyToOne(() => User, (user) => user.kycRecords)
   user: User;
 
-  @Column()
-  documentType: string; // Aadhaar, Passport, etc.
+  // Aadhar Details as JSON Object
+  @Column({ type: 'jsonb', nullable: true })
+  aadhar: Aadhar;
 
-  @Column()
-  documentUrl: string; // where the document is stored
+  // PAN Details as JSON Object
+  @Column({ type: 'jsonb', nullable: true })
+  pan: Pan;
 
+  // Bank Details
+  @Column({ nullable: true })
+  ifsc: string;
+
+  @Column({ nullable: true })
+  accountNumber: string;
+
+  @Column({ nullable: true })
+  accountHolderName: string;
+
+  @Column({ nullable: true })
+  bankName: string;
+
+  @Column({ nullable: true })
+  branchName: string;
+
+  // GST Details
+  @Column({ nullable: true })
+  gstNumber: string;
+
+  @Column({ nullable: true })
+  gstCertificate: string; // URL to GST certificate
+
+  // Business Type
+  @Column({ type: 'enum', enum: BusinessType, nullable: true })
+  businessType: BusinessType;
+
+  // Overall KYC Status
   @Column({ type: 'enum', enum: KycStatus, default: KycStatus.PENDING })
   status: KycStatus;
 

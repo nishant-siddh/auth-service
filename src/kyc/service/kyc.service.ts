@@ -9,7 +9,6 @@ import { Kyc, KycStatus } from '../entities/kyc.entity';
 import { User } from 'src/user/entities/user.entity';
 import { CreateKycDto } from '../dto/create-kyc.dto';
 import { UpdateKycDto } from '../dto/update-kyc.dto';
-import { CreateKycBulkDto } from '../dto/bulk-upload-kyc.dto';
 import { UserService } from 'src/user/services/user.service';
 import { GetKycFilterDto, SortBy, SortOrder } from '../dto/get-all-kyc.dto';
 
@@ -28,11 +27,12 @@ export class KycService {
     const user = await this.userService.findOne(userFromToken.sub);
     if (!user) throw new NotFoundException('User not found');
 
+    // Check if user already has a KYC record
     const existingKyc = await this.kycRepository.findOne({
-      where: { user: { id: user.id }, documentType: createKycDto.documentType },
+      where: { user: { id: user.id } },
     });
     if (existingKyc)
-      throw new BadRequestException('KYC document already exists');
+      throw new BadRequestException('KYC record already exists for this user');
 
     const kyc = this.kycRepository.create({
       ...createKycDto,
@@ -43,43 +43,45 @@ export class KycService {
     return { message: 'KYC submitted successfully' };
   }
 
-  async createBulk(
-    dto: CreateKycBulkDto,
-    userFromToken: any,
-  ): Promise<{ message: string }> {
-    const user = await this.userService.findOne(userFromToken.sub);
-    if (!user) throw new NotFoundException('User not found');
+  // async createBulk(
+  //   dto: CreateKycBulkDto,
+  //   userFromToken: any,
+  // ): Promise<{ message: string }> {
+  //   const user = await this.userService.findOne(userFromToken.sub);
+  //   if (!user) throw new NotFoundException('User not found');
 
-    let submittedCount = 0;
+  //   let submittedCount = 0;
 
-    for (const doc of dto.documents) {
-      try {
-        // Reuse the existing create() method
-        await this.create(doc, userFromToken);
-        submittedCount++;
-      } catch (err) {
-        // If document already exists, skip it
-        if (!(err instanceof BadRequestException)) {
-          throw err; // rethrow unexpected errors
-        }
-      }
-    }
+  //   for (const doc of dto.documents) {
+  //     try {
+  //       // Reuse the existing create() method
+  //       await this.create(doc, userFromToken);
+  //       submittedCount++;
+  //     } catch (err) {
+  //       // If document already exists, skip it
+  //       if (!(err instanceof BadRequestException)) {
+  //         throw err; // rethrow unexpected errors
+  //       }
+  //     }
+  //   }
 
-    return {
-      message:
-        submittedCount > 0
-          ? `${submittedCount} KYC document(s) submitted successfully`
-          : 'All documents already exist, nothing to submit',
-    };
-  }
+  //   return {
+  //     message:
+  //       submittedCount > 0
+  //         ? `${submittedCount} KYC document(s) submitted successfully`
+  //         : 'All documents already exist, nothing to submit',
+  //   };
+  // }
 
   async findAll(
     filterDto: GetKycFilterDto,
   ): Promise<{ data: Kyc[]; totalRecords: number; currentPage: number }> {
     const {
       name,
-      documentType,
       status,
+      businessType,
+      aadharIsVerified,
+      panIsVerified,
       limit = 10,
       page = 1,
       sortBy = SortBy.CREATED_AT,
@@ -111,9 +113,21 @@ export class KycService {
       });
     }
 
-    if (documentType) {
-      queryBuilder.andWhere('kyc.documentType ILIKE :documentType', {
-        documentType: `%${documentType}%`,
+    if (businessType) {
+      queryBuilder.andWhere('kyc.businessType = :businessType', {
+        businessType: businessType,
+      });
+    }
+
+    if (aadharIsVerified !== undefined) {
+      queryBuilder.andWhere(`kyc.aadhar->>'isVerified' = :aadharIsVerified`, {
+        aadharIsVerified: aadharIsVerified.toString(),
+      });
+    }
+
+    if (panIsVerified !== undefined) {
+      queryBuilder.andWhere(`kyc.pan->>'isVerified' = :panIsVerified`, {
+        panIsVerified: panIsVerified.toString(),
       });
     }
 
@@ -141,8 +155,16 @@ export class KycService {
       where: { user: { id: user.id } },
       select: [
         'id',
-        'documentType',
-        'documentUrl',
+        'aadhar',
+        'pan',
+        'ifsc',
+        'accountNumber',
+        'accountHolderName',
+        'bankName',
+        'branchName',
+        'gstNumber',
+        'gstCertificate',
+        'businessType',
         'status',
         'createdAt',
         'updatedAt',
@@ -155,8 +177,16 @@ export class KycService {
       where: { id },
       select: [
         'id',
-        'documentType',
-        'documentUrl',
+        'aadhar',
+        'pan',
+        'ifsc',
+        'accountNumber',
+        'accountHolderName',
+        'bankName',
+        'branchName',
+        'gstNumber',
+        'gstCertificate',
+        'businessType',
         'status',
         'createdAt',
         'updatedAt',
@@ -171,9 +201,37 @@ export class KycService {
     updateKycDto: UpdateKycDto,
   ): Promise<{ message: string }> {
     const kyc = await this.findOne(id);
-    Object.assign(kyc, updateKycDto);
+
+    // Deep merge for Aadhar
+    if (updateKycDto?.aadhar) {
+      kyc.aadhar = this.mergeDefined(kyc.aadhar || {}, updateKycDto.aadhar);
+    }
+
+    // Deep merge for PAN
+    if (updateKycDto?.pan) {
+      kyc.pan = this.mergeDefined(kyc.pan || {}, updateKycDto.pan);
+    }
+
+    // Assign top-level non-undefined fields
+    const { aadhar, pan, ...otherFields } = updateKycDto;
+    for (const key in otherFields) {
+      if (otherFields[key] !== undefined) {
+        kyc[key] = otherFields[key];
+      }
+    }
+
     await this.kycRepository.save(kyc);
     return { message: 'KYC document updated successfully' };
+  }
+
+  private mergeDefined<T>(target: T, source: Partial<T>): T {
+    const updated = { ...target };
+    for (const key in source) {
+      if (source[key] !== undefined) {
+        updated[key] = source[key];
+      }
+    }
+    return updated;
   }
 
   async remove(id: string): Promise<void> {

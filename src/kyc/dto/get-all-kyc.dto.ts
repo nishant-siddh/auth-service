@@ -1,10 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
-import { KycStatus } from '../entities/kyc.entity';
+import { KycStatus, BusinessType } from '../entities/kyc.entity';
 
 export enum SortBy {
   CREATED_AT = 'createdAt',
   STATUS = 'status',
+  BUSINESS_TYPE = 'businessType',
 }
 
 export enum SortOrder {
@@ -29,18 +30,36 @@ export class GetKycFilterDto {
     required: false,
   })
   @IsString()
-  @IsEnum(KycStatus, { message: 'status must be either pending, approved, or rejected' })
+  @IsEnum(KycStatus, { message: 'status must be either pending, verified, or rejected' })
   @IsOptional()
-  status?: KycStatus = KycStatus.PENDING;
+  status?: KycStatus;
   
   @ApiProperty({
-    description: 'The type of the KYC document',
-    example: 'Aadhaar',
+    description: 'The business type',
+    example: 'individual',
+    enum: BusinessType,
     required: false,
   })
   @IsString()
+  @IsEnum(BusinessType)
   @IsOptional()
-  documentType?: string;
+  businessType?: BusinessType;
+
+  @ApiProperty({
+    description: 'Filter by Aadhar verification status',
+    example: true,
+    required: false,
+  })
+  @IsOptional()
+  aadharIsVerified?: boolean;
+
+  @ApiProperty({
+    description: 'Filter by PAN verification status',
+    example: true,
+    required: false,
+  })
+  @IsOptional()
+  panIsVerified?: boolean;
 
   @ApiProperty({
     description: 'The number of items per page (optional, default: 10)',
@@ -52,7 +71,7 @@ export class GetKycFilterDto {
   @IsOptional()
   // @IsInt()
   // @Min(1)
-  limit?: number = 1;
+  limit?: number = 10;
 
   @ApiProperty({
     description: 'The page number for pagination (optional, default: 1)',
