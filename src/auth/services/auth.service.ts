@@ -4,7 +4,13 @@ import * as bcrypt from 'bcryptjs';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import { UserService } from 'src/user/services/user.service';
-import { User } from 'src/user/entities/user.entity';
+import { User, UserRole } from 'src/user/entities/user.entity';
+
+interface JwtPayload {
+  sub: string;
+  email: string;
+  role: UserRole;
+}
 
 @Injectable()
 export class AuthService {
@@ -73,7 +79,7 @@ export class AuthService {
   }
 
   private generateTokens(user: User) {
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload: JwtPayload = { sub: String(user.id), email: user.email, role: user.role };
     return {
       accessToken: this.jwtService.sign(payload, {
         secret: process.env.JWT_SECRET,
