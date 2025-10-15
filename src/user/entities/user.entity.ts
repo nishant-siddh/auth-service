@@ -31,6 +31,9 @@ export class User {
   
   @Column({ name: 'is_verified', default: false })
   isVerified: boolean;
+  
+  @Column({ name: 'is_email_verified', default: false })
+  isEmailVerified: boolean;
 
   @OneToMany(() => Kyc, (kyc) => kyc.user)
   kycRecords: Kyc[];

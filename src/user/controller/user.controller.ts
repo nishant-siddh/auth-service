@@ -45,6 +45,7 @@ export class UserController {
           role: { type: 'string', enum: ['individual', 'agency'] },
           companyName: { type: 'string', nullable: true },
           isVerified: { type: 'boolean' },
+          isEmailVerified: { type: 'boolean' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' }
         }
@@ -58,7 +59,7 @@ export class UserController {
   async findAll(@Query() filterDto: GetUsersFilterDto) {
     return await this.userService.getUsers(filterDto);
   }
-
+  
   @Get('/get-current-user')
   @ApiOperation({
     summary: 'Get current user profile',
@@ -76,6 +77,7 @@ export class UserController {
         phone: { type: 'string', example: '+1234567890' },
         role: { type: 'string', enum: ['individual', 'agency'] },
         companyName: { type: 'string', nullable: true },
+        isEmailVerified: { type: 'boolean' },
         isVerified: { type: 'boolean' },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' }

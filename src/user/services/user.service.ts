@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User, UserRole } from '../entities/user.entity';
 import { GetUsersFilterDto, SortBy, SortOrder } from '../dto/get-users.dto';
@@ -44,6 +44,7 @@ export class UserService {
       phone,
       role,
       isVerified,
+      isEmailVerified,
       limit = 10,
       page = 1,
       sortBy = SortBy.CREATED_AT,
@@ -59,6 +60,7 @@ export class UserService {
       'user.email',
       'user.companyName',
       'user.isVerified',
+      'user.isEmailVerified',
       'user.role',
       'user.createdAt',
       'user.updatedAt'
@@ -79,6 +81,10 @@ export class UserService {
 
     if (isVerified) {
       query.andWhere('user.isVerified = :isVerified', { isVerified });
+    }
+
+    if (isEmailVerified) {
+      query.andWhere('user.isEmailVerified = :isEmailVerified', { isEmailVerified });
     }
 
     if (role) {
@@ -109,7 +115,7 @@ export class UserService {
   async findOne(id: string) {
     const user = await this.usersRepository.findOne({
       where: { id },
-      select: ['id', 'name', 'phone', 'email', 'role', 'companyName', 'createdAt', 'updatedAt', 'isVerified'],
+      select: ['id', 'name', 'phone', 'email', 'role', 'companyName', 'createdAt', 'updatedAt', 'isVerified', 'isEmailVerified'],
     });
 
     if (!user) throw new NotFoundException(`User with ID ${id} not found`);

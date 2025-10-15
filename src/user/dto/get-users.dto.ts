@@ -45,6 +45,14 @@ export class GetUsersFilterDto {
   })
   @IsOptional()
   isVerified?: boolean;
+  
+  @ApiProperty({
+    description: 'Filter by email verification status',
+    example: true,
+    required: false,
+  })
+  @IsOptional()
+  isEmailVerified?: boolean;
 
   @ApiProperty({
     description: 'The role of the user',

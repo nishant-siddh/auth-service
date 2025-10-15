@@ -28,4 +28,13 @@ export class UpdateUserDto {
   @IsBoolean()
   @IsOptional()
   isVerified?: boolean;
+  
+  @ApiProperty({
+    description: 'Change email verified status',
+    example: true,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isEmailVerified?: boolean;
 }
