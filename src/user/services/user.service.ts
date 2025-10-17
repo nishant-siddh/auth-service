@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
@@ -17,33 +22,38 @@ export class UserService {
   async create(registerDto: RegisterDto): Promise<User> {
     if (registerDto.role === UserRole.AGENCY) {
       if (!registerDto.companyName?.trim()) {
-        throw new BadRequestException('Company name is required for agency registration');
+        throw new BadRequestException(
+          'Company name is required for agency registration',
+        );
       }
-    } else if (registerDto.role === UserRole.INDIVIDUAL) {
+    } else {
       registerDto.companyName = undefined;
     }
 
-    if(registerDto.name) registerDto.name = registerDto.name.trim();
-    if(registerDto.email) registerDto.email = registerDto.email.toLowerCase();
-    if(registerDto.phone) registerDto.phone = registerDto.phone.trim();
-    if(registerDto.companyName) registerDto.companyName = registerDto.companyName.trim();
+    if (registerDto.name) registerDto.name = registerDto.name.trim();
+    if (registerDto.email) registerDto.email = registerDto.email.toLowerCase();
+    if (registerDto.phone) registerDto.phone = registerDto.phone.trim();
+    if (registerDto.companyName)
+      registerDto.companyName = registerDto.companyName.trim();
 
     const { password } = registerDto;
     const hashedPassword = await bcrypt.hash(password?.trim(), 10);
     const user = this.usersRepository.create({
       ...registerDto,
-      password: hashedPassword
+      password: hashedPassword,
     });
     return this.usersRepository.save(user);
   }
 
-  async getUsers(filterDto: GetUsersFilterDto): Promise<{ data: User[]; totalRecords: number; currentPage: number }> {
+  async getUsers(
+    filterDto: GetUsersFilterDto,
+  ): Promise<{ data: User[]; totalRecords: number; currentPage: number }> {
     const {
       name,
       email,
       phone,
       role,
-      isVerified,
+      status,
       isEmailVerified,
       limit = 10,
       page = 1,
@@ -59,11 +69,11 @@ export class UserService {
       'user.phone',
       'user.email',
       'user.companyName',
-      'user.isVerified',
+      'user.status',
       'user.isEmailVerified',
       'user.role',
       'user.createdAt',
-      'user.updatedAt'
+      'user.updatedAt',
     ]);
 
     // Filters
@@ -72,19 +82,24 @@ export class UserService {
     }
 
     if (email && phone) {
-      query.andWhere('(user.email = :email OR user.phone = :phone)', { email, phone });
+      query.andWhere('(user.email = :email OR user.phone = :phone)', {
+        email,
+        phone,
+      });
     } else if (email) {
       query.andWhere('user.email = :email', { email });
     } else if (phone) {
       query.andWhere('user.phone = :phone', { phone });
     }
 
-    if (isVerified) {
-      query.andWhere('user.isVerified = :isVerified', { isVerified });
+    if (status) {
+      query.andWhere('user.status = :status', { status });
     }
 
     if (isEmailVerified) {
-      query.andWhere('user.isEmailVerified = :isEmailVerified', { isEmailVerified });
+      query.andWhere('user.isEmailVerified = :isEmailVerified', {
+        isEmailVerified,
+      });
     }
 
     if (role) {
@@ -115,7 +130,18 @@ export class UserService {
   async findOne(id: string) {
     const user = await this.usersRepository.findOne({
       where: { id },
-      select: ['id', 'name', 'phone', 'email', 'role', 'companyName', 'createdAt', 'updatedAt', 'isVerified', 'isEmailVerified'],
+      select: [
+        'id',
+        'name',
+        'phone',
+        'email',
+        'role',
+        'companyName',
+        'createdAt',
+        'updatedAt',
+        'status',
+        'isEmailVerified',
+      ],
     });
 
     if (!user) throw new NotFoundException(`User with ID ${id} not found`);

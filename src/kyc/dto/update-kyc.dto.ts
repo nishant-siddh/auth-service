@@ -1,9 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsEnum, IsString, ValidateNested, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
-import { KycStatus, BusinessType } from '../entities/kyc.entity';
+import { BusinessType } from '../entities/kyc.entity';
 import { Aadhar } from '../entities/aadhar.entity';
 import { Pan } from '../entities/pan.entity';
+import { Status } from 'src/common/enums';
 
 export class UpdateKycDto {
   // Aadhar Details as JSON Object
@@ -66,8 +67,8 @@ export class UpdateKycDto {
   businessType?: BusinessType;
 
   // Overall KYC Status
-  @ApiPropertyOptional({ enum: KycStatus })
+  @ApiPropertyOptional({ enum: Status })
   @IsOptional()
-  @IsEnum(KycStatus)
-  status?: KycStatus;
+  @IsEnum(Status)
+  status?: Status;
 }

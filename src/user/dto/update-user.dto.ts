@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsEmail, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
+import { Status } from 'src/common/enums';
 
 export class UpdateUserDto {
   @ApiProperty({
@@ -22,12 +23,12 @@ export class UpdateUserDto {
   
   @ApiProperty({
     description: 'Change verified status',
-    example: true,
+    example: Status.PENDING,
     required: false,
   })
-  @IsBoolean()
+  @IsEnum(Status)
   @IsOptional()
-  isVerified?: boolean;
+  status?: Status;
   
   @ApiProperty({
     description: 'Change email verified status',

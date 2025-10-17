@@ -7,32 +7,36 @@ import {
   IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { BusinessType, KycStatus } from '../entities/kyc.entity';
+import { BusinessType } from '../entities/kyc.entity';
 import { Aadhar } from '../entities/aadhar.entity';
 import { Pan } from '../entities/pan.entity';
+import { Status } from 'src/common/enums';
 
 export class CreateKycDto {
   // Aadhar Details as JSON Object
-  @ApiPropertyOptional({ type: Aadhar })
-  @IsOptional()
+  @ApiProperty({ type: Aadhar })
   @IsObject()
   @ValidateNested()
   @Type(() => Aadhar)
-  aadhar?: Aadhar;
+  aadhar: Aadhar;
 
   // PAN Details as JSON Object
-  @ApiPropertyOptional({ type: Pan })
-  @IsOptional()
+  @ApiProperty({ type: Pan })
   @IsObject()
   @ValidateNested()
   @Type(() => Pan)
-  pan?: Pan;
+  pan: Pan;
 
   // Bank Details
   @ApiPropertyOptional({ example: 'SBIN0001234' })
   @IsOptional()
   @IsString()
   ifsc?: string;
+
+  @ApiPropertyOptional({ example: 'https://example.com/cancelled-cheque.pdf' })
+  @IsOptional()
+  @IsString()
+  cancelledCheque?: string;
 
   @ApiPropertyOptional({ example: '1234567890' })
   @IsOptional()
@@ -71,8 +75,8 @@ export class CreateKycDto {
   @IsEnum(BusinessType)
   businessType?: BusinessType;
 
-  @ApiPropertyOptional({ enum: KycStatus })
+  @ApiPropertyOptional({ enum: Status })
   @IsOptional()
-  @IsEnum(KycStatus)
-  status?: KycStatus;
+  @IsEnum(Status)
+  status?: Status;
 }

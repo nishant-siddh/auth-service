@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
-import { KycStatus, BusinessType } from '../entities/kyc.entity';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { BusinessType } from '../entities/kyc.entity';
+import { Status } from 'src/common/enums';
 
 export enum SortBy {
   CREATED_AT = 'createdAt',
@@ -26,13 +27,13 @@ export class GetKycFilterDto {
   @ApiProperty({
     description: 'The status of the KYC document',
     example: 'pending',
-    enum: KycStatus,
+    enum: Status,
     required: false,
   })
   @IsString()
-  @IsEnum(KycStatus, { message: 'status must be either pending, verified, or rejected' })
+  @IsEnum(Status, { message: 'status must be either pending, verified, or rejected' })
   @IsOptional()
-  status?: KycStatus;
+  status?: Status;
   
   @ApiProperty({
     description: 'The business type',

@@ -10,12 +10,7 @@ import {
 } from 'typeorm';
 import { Aadhar } from './aadhar.entity';
 import { Pan } from './pan.entity';
-
-export enum KycStatus {
-  PENDING = 'pending',
-  VERIFIED = 'verified',
-  REJECTED = 'rejected',
-}
+import { Status } from 'src/common/enums';
 
 export enum BusinessType {
   INDIVIDUAL = 'individual',
@@ -70,8 +65,8 @@ export class Kyc {
   businessType: BusinessType;
 
   // Overall KYC Status
-  @Column({ type: 'enum', enum: KycStatus, default: KycStatus.PENDING })
-  status: KycStatus;
+  @Column({ type: 'enum', enum: Status, default: Status.PENDING })
+  status: Status;
 
   @CreateDateColumn({
     name: 'created_at',

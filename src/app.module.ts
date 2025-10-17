@@ -20,9 +20,9 @@ import { KycModule } from './kyc/kyc.module';
         type: configService.get<'postgres'>('DB_TYPE'),
         host: configService.get<string>('DB_HOST'),
         port: parseInt(configService.get<string>('DB_PORT') || '5432', 10),
-        username:  configService.get<string>('DB_USERNAME'),
-        password:  configService.get<string>('DB_PASSWORD'),
-        database:  configService.get<string>('DB_NAME'),
+        username: configService.get<string>('DB_USERNAME'),
+        password: configService.get<string>('DB_PASSWORD'),
+        database: configService.get<string>('DB_NAME'),
         autoLoadEntities: true, // automatically load entities
         synchronize: true, // only for dev, disables in production
         ssl: {
@@ -32,7 +32,7 @@ import { KycModule } from './kyc/kyc.module';
     }),
     AuthModule,
     UserModule,
-    KycModule
+    KycModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsEnum, IsString } from 'class-validator';
+import { Source } from 'src/common/enums';
 
 export class LoginDto {
   @ApiProperty({
@@ -12,4 +13,8 @@ export class LoginDto {
   @ApiProperty({ description: 'The password of the user', example: '123456' })
   @IsString()
   password: string;
+
+  @ApiProperty({ description: 'The source of the login request', enum: Source, example: Source.USER_PANEL })
+  @IsEnum(Source)
+  queryType: Source;
 }

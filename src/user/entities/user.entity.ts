@@ -1,9 +1,19 @@
+import { Status } from 'src/common/enums';
 import { Kyc } from 'src/kyc/entities/kyc.entity';
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+  OneToMany,
+} from 'typeorm';
 
 export enum UserRole {
   INDIVIDUAL = 'individual',
   AGENCY = 'agency',
+  ADMIN = 'admin',
 }
 
 @Entity()
@@ -16,7 +26,7 @@ export class User {
 
   @Column({ unique: true, nullable: true })
   phone: string;
-  
+
   @Column({ unique: true, nullable: true })
   email: string;
 
@@ -28,17 +38,21 @@ export class User {
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.INDIVIDUAL })
   role: UserRole;
-  
-  @Column({ name: 'is_verified', default: false })
-  isVerified: boolean;
-  
+
+  @Column({ type: 'enum', enum: Status, default: Status.PENDING })
+  status: Status;
+
   @Column({ name: 'is_email_verified', default: false })
   isEmailVerified: boolean;
 
   @OneToMany(() => Kyc, (kyc) => kyc.user)
   kycRecords: Kyc[];
 
-  @CreateDateColumn({ name: 'created_at' , type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn({
+    name: 'created_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   createdAt: Date;
 
   @UpdateDateColumn({

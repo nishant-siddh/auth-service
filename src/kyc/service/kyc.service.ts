@@ -5,12 +5,16 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Kyc, KycStatus } from '../entities/kyc.entity';
-import { User } from 'src/user/entities/user.entity';
+import { Kyc } from '../entities/kyc.entity';
 import { CreateKycDto } from '../dto/create-kyc.dto';
 import { UpdateKycDto } from '../dto/update-kyc.dto';
 import { UserService } from 'src/user/services/user.service';
 import { GetKycFilterDto, SortBy, SortOrder } from '../dto/get-all-kyc.dto';
+import {
+  DocumentType,
+  UpdateKycDocumentVerificationStatusDto,
+} from '../dto/update-document-verification-status.dto';
+import { Status } from 'src/common/enums';
 
 @Injectable()
 export class KycService {
@@ -36,42 +40,12 @@ export class KycService {
 
     const kyc = this.kycRepository.create({
       ...createKycDto,
-      status: KycStatus.PENDING,
+      status: Status.PENDING,
       user,
     });
     await this.kycRepository.save(kyc);
     return { message: 'KYC submitted successfully' };
   }
-
-  // async createBulk(
-  //   dto: CreateKycBulkDto,
-  //   userFromToken: any,
-  // ): Promise<{ message: string }> {
-  //   const user = await this.userService.findOne(userFromToken.sub);
-  //   if (!user) throw new NotFoundException('User not found');
-
-  //   let submittedCount = 0;
-
-  //   for (const doc of dto.documents) {
-  //     try {
-  //       // Reuse the existing create() method
-  //       await this.create(doc, userFromToken);
-  //       submittedCount++;
-  //     } catch (err) {
-  //       // If document already exists, skip it
-  //       if (!(err instanceof BadRequestException)) {
-  //         throw err; // rethrow unexpected errors
-  //       }
-  //     }
-  //   }
-
-  //   return {
-  //     message:
-  //       submittedCount > 0
-  //         ? `${submittedCount} KYC document(s) submitted successfully`
-  //         : 'All documents already exist, nothing to submit',
-  //   };
-  // }
 
   async findAll(
     filterDto: GetKycFilterDto,
@@ -98,7 +72,7 @@ export class KycService {
         'user.phone',
         'user.email',
         'user.role',
-        'user.isVerified',
+        'user.status',
       ]);
 
     if (name) {
@@ -120,13 +94,16 @@ export class KycService {
     }
 
     if (aadharIsVerified !== undefined) {
-      queryBuilder.andWhere(`kyc.aadhar->>'isVerified' = :aadharIsVerified`, {
-        aadharIsVerified: aadharIsVerified.toString(),
-      });
+      queryBuilder.andWhere(
+        `kyc.aadhar->>'documentStatus' = :aadharIsVerified`,
+        {
+          aadharIsVerified: aadharIsVerified.toString(),
+        },
+      );
     }
 
     if (panIsVerified !== undefined) {
-      queryBuilder.andWhere(`kyc.pan->>'isVerified' = :panIsVerified`, {
+      queryBuilder.andWhere(`kyc.pan->>'documentStatus' = :panIsVerified`, {
         panIsVerified: panIsVerified.toString(),
       });
     }
@@ -148,7 +125,7 @@ export class KycService {
   }
 
   async findAllForUser(userFromToken: any): Promise<Kyc[]> {
-    const user = await this.userService.findOne(userFromToken.sub);
+    const user = await this.userService.getCurrentUser(userFromToken.sub);
     if (!user) throw new NotFoundException('User not found');
 
     return this.kycRepository.find({
@@ -196,28 +173,217 @@ export class KycService {
     return kyc;
   }
 
+  async updateDocumentStatus(
+    id: string,
+    params: UpdateKycDocumentVerificationStatusDto,
+  ): Promise<{ message: string }> {
+    const { type, documentStatus } = params;
+
+    const kyc = await this.findOne(id);
+    if (!kyc) throw new NotFoundException('KYC record not found');
+
+    if (!kyc[type]) {
+      throw new BadRequestException('Document not found');
+    }
+
+    const validTypes = [DocumentType.AADHAR, DocumentType.PAN];
+    if (!validTypes.includes(type)) {
+      throw new BadRequestException('Invalid document type');
+    }
+
+    const updateResult = await this.kycRepository
+      .createQueryBuilder()
+      .update(Kyc)
+      .set({
+        [type]: () =>
+          `jsonb_set(${type}, '{documentStatus}', '"${documentStatus}"')`,
+      })
+      .where(`${type} IS NOT NULL`)
+      .execute();
+    if (updateResult.affected === 0) {
+      throw new NotFoundException(`No KYC records found with ${type} document`);
+    }
+    return {
+      message: `${updateResult.affected} KYC record(s) updated successfully`,
+    };
+  }
+
+  // async update(
+  //   id: string,
+  //   updateKycDto: UpdateKycDto,
+  // ): Promise<{ message: string }> {
+  //   const kyc = await this.kycRepository
+  //     .createQueryBuilder('kyc')
+  //     .leftJoin('kyc.user', 'user')
+  //     .addSelect([
+  //       'user.id',
+  //       'user.name',
+  //       'user.phone',
+  //       'user.email',
+  //       'user.role',
+  //       'user.status',
+  //     ])
+  //     .where('kyc.id = :id', { id })
+  //     .getOne();
+
+  //   if (!kyc) {
+  //     throw new NotFoundException(`KYC with ID ${id} not found`);
+  //   }
+
+  //   // Deep merge for Aadhar
+  //   if (updateKycDto?.aadhar) {
+  //     kyc.aadhar = this.mergeDefined(kyc.aadhar || {}, updateKycDto.aadhar);
+  //   }
+
+  //   // Deep merge for PAN
+  //   if (updateKycDto?.pan) {
+  //     kyc.pan = this.mergeDefined(kyc.pan || {}, updateKycDto.pan);
+  //   }
+
+  //   if (updateKycDto?.status) {
+  //     if (updateKycDto.status === Status.PENDING) {
+  //       throw new BadRequestException(
+  //         'KYC status cannot be changed back to PENDING',
+  //       );
+  //     }
+  //     if (
+  //       updateKycDto.status === Status.VERIFIED ||
+  //       updateKycDto.status === Status.REJECTED
+  //     ) {
+  //       if (kyc.status !== Status.PENDING) {
+  //         throw new BadRequestException(
+  //           'Only PENDING KYC can be approved or rejected',
+  //         );
+  //       } else {
+  //         if (updateKycDto.status === Status.VERIFIED) {
+  //           if (
+  //             !kyc.aadhar ||
+  //             kyc.aadhar.documentStatus !== Status.VERIFIED ||
+  //             !kyc.pan ||
+  //             kyc.pan.documentStatus !== Status.VERIFIED
+  //           ) {
+  //             throw new BadRequestException(
+  //               'Both Aadhar and PAN documents must be VERIFIED to approve KYC',
+  //             );
+  //           }
+  //         }
+  //         console.log(kyc, 'kyc before status update');
+  //         console.log(updateKycDto.status, 'updateKycDto.status');
+  //         kyc.status = updateKycDto.status;
+  //         console.log(kyc.user.id, 'kyc.user.id 1');
+  //         await this.userService.update(kyc.user.id, {
+  //           status: updateKycDto.status,
+  //         });
+  //         console.log(kyc.user.id, 'kyc.user.id 2');
+  //       }
+  //     }
+  //   }
+
+  //   // Assign top-level non-undefined fields
+  //   const { aadhar, pan, ...otherFields } = updateKycDto;
+  //   for (const key in otherFields) {
+  //     if (otherFields[key] !== undefined) {
+  //       kyc[key] = otherFields[key];
+  //     }
+  //   }
+
+  //   await this.kycRepository.save(kyc);
+  //   return { message: 'KYC document updated successfully' };
+  // }
+
   async update(
     id: string,
     updateKycDto: UpdateKycDto,
   ): Promise<{ message: string }> {
-    const kyc = await this.findOne(id);
+    const kyc = await this.kycRepository
+      .createQueryBuilder('kyc')
+      .leftJoin('kyc.user', 'user')
+      .addSelect([
+        'user.id',
+        'user.name',
+        'user.phone',
+        'user.email',
+        'user.role',
+        'user.status',
+      ])
+      .where('kyc.id = :id', { id })
+      .getOne();
+
+    if (!kyc) {
+      throw new NotFoundException(`KYC with ID ${id} not found`);
+    }
+
+    let resetToPending = false;
 
     // Deep merge for Aadhar
     if (updateKycDto?.aadhar) {
+      // Check if any field other than documentStatus is being updated
+      const aadharUpdates = { ...updateKycDto.aadhar };
+      delete aadharUpdates.documentStatus;
+      if (Object.keys(aadharUpdates).length > 0) resetToPending = true;
+
       kyc.aadhar = this.mergeDefined(kyc.aadhar || {}, updateKycDto.aadhar);
     }
 
     // Deep merge for PAN
     if (updateKycDto?.pan) {
+      // Check if any field other than documentStatus is being updated
+      const panUpdates = { ...updateKycDto.pan };
+      delete panUpdates.documentStatus;
+      if (Object.keys(panUpdates).length > 0) resetToPending = true;
+
       kyc.pan = this.mergeDefined(kyc.pan || {}, updateKycDto.pan);
     }
 
+    // Handle KYC status update
+    if (updateKycDto?.status) {
+      if (updateKycDto.status === Status.PENDING) {
+        throw new BadRequestException(
+          'KYC status cannot be changed back to PENDING',
+        );
+      }
+      if (
+        updateKycDto.status === Status.VERIFIED ||
+        updateKycDto.status === Status.REJECTED
+      ) {
+        if (kyc.status !== Status.PENDING) {
+          throw new BadRequestException(
+            'Only PENDING KYC can be approved or rejected',
+          );
+        } else {
+          if (updateKycDto.status === Status.VERIFIED) {
+            if (
+              !kyc.aadhar ||
+              kyc.aadhar.documentStatus !== Status.VERIFIED ||
+              !kyc.pan ||
+              kyc.pan.documentStatus !== Status.VERIFIED
+            ) {
+              throw new BadRequestException(
+                'Both Aadhar and PAN documents must be VERIFIED to approve KYC',
+              );
+            }
+          }
+          kyc.status = updateKycDto.status;
+          await this.userService.update(kyc.user.id, {
+            status: updateKycDto.status,
+          });
+        }
+      }
+    }
+
     // Assign top-level non-undefined fields
-    const { aadhar, pan, ...otherFields } = updateKycDto;
+    const { aadhar, pan, status, ...otherFields } = updateKycDto;
     for (const key in otherFields) {
       if (otherFields[key] !== undefined) {
         kyc[key] = otherFields[key];
+        resetToPending = true; // any top-level field change triggers PENDING
       }
+    }
+
+    // If any field change requires KYC/user to reset
+    if (resetToPending && kyc.status !== Status.PENDING) {
+      kyc.status = Status.PENDING;
+      await this.userService.update(kyc.user.id, { status: Status.PENDING });
     }
 
     await this.kycRepository.save(kyc);

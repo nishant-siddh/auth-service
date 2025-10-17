@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsBoolean, IsOptional, Length, Matches } from 'class-validator';
+import { IsString, IsBoolean, IsOptional, Length, Matches, IsEnum } from 'class-validator';
+import { Status } from 'src/common/enums';
 
 export class Pan {
   @ApiPropertyOptional({
@@ -36,16 +37,17 @@ export class Pan {
 
   @ApiPropertyOptional({
     description: 'PAN verification status',
-    example: false,
-    default: false,
+    example: Status.PENDING,
+    default: Status.PENDING,
+    enum: Status,
   })
   @IsOptional()
-  @IsBoolean({ message: 'PAN verification status must be a boolean' })
-  isVerified?: boolean;
+  @IsEnum(Status)
+  documentStatus?: Status;
 
   constructor(partial: Partial<Pan> = {}) {
     Object.assign(this, {
-      isVerified: false,
+      documentStatus: Status.PENDING,
       ...partial,
     });
   }

@@ -17,6 +17,7 @@ import { GetUsersFilterDto } from '../dto/get-users.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtCookieGuard } from 'src/auth/guard/jwt-cookie.guard';
+import { Status } from 'src/common/enums';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -44,7 +45,7 @@ export class UserController {
           phone: { type: 'string', example: '+1234567890' },
           role: { type: 'string', enum: ['individual', 'agency'] },
           companyName: { type: 'string', nullable: true },
-          isVerified: { type: 'boolean' },
+          status: { type: 'string', enum: [Status.PENDING, Status.VERIFIED, Status.REJECTED], example: Status.PENDING },
           isEmailVerified: { type: 'boolean' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' }
@@ -78,7 +79,7 @@ export class UserController {
         role: { type: 'string', enum: ['individual', 'agency'] },
         companyName: { type: 'string', nullable: true },
         isEmailVerified: { type: 'boolean' },
-        isVerified: { type: 'boolean' },
+        status: { type: 'string', enum: [Status.PENDING, Status.VERIFIED, Status.REJECTED], example: Status.PENDING },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' }
       }

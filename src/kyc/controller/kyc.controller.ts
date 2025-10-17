@@ -6,6 +6,7 @@ import { CreateKycDto } from '../dto/create-kyc.dto';
 import { UpdateKycDto } from '../dto/update-kyc.dto';
 import { JwtCookieGuard } from 'src/auth/guard/jwt-cookie.guard';
 import { GetKycFilterDto } from '../dto/get-all-kyc.dto';
+import { UpdateKycDocumentVerificationStatusDto } from '../dto/update-document-verification-status.dto';
 
 @ApiTags('kyc')
 @ApiBearerAuth()
@@ -54,6 +55,13 @@ export class KycController {
   @ApiResponse({ status: 200, description: 'KYC updated successfully.', type: Kyc })
   update(@Param('id') id: string, @Body() updateKycDto: UpdateKycDto) {
     return this.kycService.update(id, updateKycDto);
+  }
+  
+  @Patch('/updateDocumentStatus/:id')
+  @ApiOperation({ summary: 'Update KYC record status or document URL' })
+  @ApiResponse({ status: 200, description: 'KYC updated successfully.', type: Kyc })
+  updateDocumentStatus(@Param('id') id: string, @Body() params: UpdateKycDocumentVerificationStatusDto) {
+    return this.kycService.updateDocumentStatus(id, params);
   }
 
   @Delete(':id')

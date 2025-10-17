@@ -18,6 +18,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Request } from 'express';
 import { VerifyOTPDto } from '../dto/verifyOTP.dto';
 import { generateOTP } from '../util/generateOtp';
+import { Source, Status } from 'src/common/enums';
 
 interface JwtPayload {
   sub: string;
@@ -32,6 +33,8 @@ export class AuthService {
   constructor(
     @InjectRepository(OTPVerification)
     private otpRepository: Repository<OTPVerification>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
 
     private usersService: UserService,
     private jwtService: JwtService,
@@ -134,33 +137,47 @@ export class AuthService {
     }
   }
 
-  async validateUser(identifier: string, password: string): Promise<User> {
+  async validateUser(
+    identifier: string,
+    password: string,
+    queryType: Source,
+  ): Promise<User> {
     let user: User | null = null;
     if (!identifier?.trim()) {
       throw new UnauthorizedException('Invalid credentials');
     }
     if (identifier?.includes('@')) {
       identifier = identifier.toLowerCase();
-      user = await this.usersService.findByEmail(identifier);
+      user = await this.userRepository.findOne({
+        where: { email: identifier },
+      });
     } else {
-      user = await this.usersService.findByPhone(identifier);
+      user = await this.userRepository.findOne({
+        where: { phone: identifier },
+      });
     }
     if (!user) throw new UnauthorizedException('Invalid credentials');
-    console.log(user.password, password, 'bcrypt compare');
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) throw new UnauthorizedException('Invalid credentials');
 
-    // for now only verified users can login but this will be changed later
-    if (!user.isVerified)
-      throw new UnauthorizedException('User is not verified');
+    if (queryType === Source.USER_PANEL) {
+      if (![UserRole.INDIVIDUAL, UserRole.AGENCY].includes(user.role)) {
+        throw new UnauthorizedException('You are not allowed to login here');
+      }
+    } else if (queryType === Source.ADMIN_PANEL) {
+      if (user.role !== UserRole.ADMIN) {
+        throw new UnauthorizedException('You are not allowed to login here');
+      }
+    }
+
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) throw new UnauthorizedException('Invalid credentials');    
+    if (user.role !== UserRole.ADMIN && !user.isEmailVerified)
+      throw new UnauthorizedException("Please verify your email prior to login");
     return user;
   }
 
   async login(loginDto: LoginDto) {
-    const user = await this.validateUser(
-      loginDto.identifier,
-      loginDto.password,
-    );
+    const { identifier, password, queryType } = loginDto;
+    const user = await this.validateUser(identifier, password, queryType);
     const tokens = this.generateTokens(user);
     return { tokens };
   }

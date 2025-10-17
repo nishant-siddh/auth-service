@@ -1,5 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsBoolean, IsOptional, Length, Matches } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsOptional, Length, Matches, IsEnum } from 'class-validator';
+import { Status } from 'src/common/enums';
 
 export class Aadhar {
   @ApiPropertyOptional({
@@ -34,16 +35,17 @@ export class Aadhar {
 
   @ApiPropertyOptional({
     description: 'Aadhar verification status',
-    example: false,
-    default: false,
+    example: Status.PENDING,
+    default: Status.PENDING,
+    enum: Status,
   })
   @IsOptional()
-  @IsBoolean({ message: 'Aadhar verification status must be a boolean' })
-  isVerified?: boolean;
+  @IsEnum(Status)
+  documentStatus?: Status;
 
   constructor(partial: Partial<Aadhar> = {}) {
     Object.assign(this, {
-      isVerified: false,
+      documentStatus: Status.PENDING,
       ...partial,
     });
   }

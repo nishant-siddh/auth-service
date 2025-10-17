@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { UserRole } from '../entities/user.entity';
+import { Status } from 'src/common/enums';
 
 export enum SortBy {
   CREATED_AT = 'createdAt',
@@ -40,11 +41,11 @@ export class GetUsersFilterDto {
   
   @ApiProperty({
     description: 'Filter by verification status',
-    example: true,
+    example: Status.PENDING,
     required: false,
   })
-  @IsOptional()
-  isVerified?: boolean;
+  @IsEnum(Status)
+  status?: Status;
   
   @ApiProperty({
     description: 'Filter by email verification status',
