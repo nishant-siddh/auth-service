@@ -69,7 +69,6 @@ export class CreateKycDto {
   @IsString()
   gstCertificate?: string;
 
-  // Business Type
   @ApiPropertyOptional({ enum: BusinessType, example: BusinessType.INDIVIDUAL })
   @IsOptional()
   @IsEnum(BusinessType)
