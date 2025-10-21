@@ -60,7 +60,7 @@ export class UserService {
       sortBy = SortBy.CREATED_AT,
       sortOrder = SortOrder.ASC,
     } = filterDto;
-
+    
     const query = this.usersRepository.createQueryBuilder('user');
 
     query.select([
@@ -119,6 +119,8 @@ export class UserService {
 
     // Execute query and get data + total count for pagination meta
     const [users, totalCount] = await query.getManyAndCount();
+
+    console.log(users, 'users');
 
     return {
       data: users,

@@ -42,9 +42,11 @@ export class GetUsersFilterDto {
   @ApiProperty({
     description: 'Filter by verification status',
     example: Status.PENDING,
+    enum: Status,
     required: false,
   })
   @IsEnum(Status)
+  @IsOptional()
   status?: Status;
   
   @ApiProperty({
