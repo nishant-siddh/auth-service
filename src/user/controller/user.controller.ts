@@ -90,6 +90,7 @@ export class UserController {
     description: 'Unauthorized - Invalid or expired token' 
   })
   async getCurrentUser(@Request() req) {
+    console.log(req.user, 'this is user from req');
     return await this.userService.getCurrentUser(req.user);
   }
 

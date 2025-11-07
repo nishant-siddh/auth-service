@@ -125,7 +125,7 @@ export class KycService {
   }
 
   async findAllForUser(userFromToken: any): Promise<Kyc[]> {
-    const user = await this.userService.getCurrentUser(userFromToken.sub);
+    const user = await this.userService.getCurrentUser(userFromToken);
     if (!user) throw new NotFoundException('User not found');
 
     return this.kycRepository.find({
@@ -200,96 +200,17 @@ export class KycService {
       })
       .where(`${type} IS NOT NULL`)
       .execute();
+
+    await this.update(id, { status: Status.PENDING });
+
     if (updateResult.affected === 0) {
       throw new NotFoundException(`No KYC records found with ${type} document`);
     }
+
     return {
       message: `${updateResult.affected} KYC record(s) updated successfully`,
     };
   }
-
-  // async update(
-  //   id: string,
-  //   updateKycDto: UpdateKycDto,
-  // ): Promise<{ message: string }> {
-  //   const kyc = await this.kycRepository
-  //     .createQueryBuilder('kyc')
-  //     .leftJoin('kyc.user', 'user')
-  //     .addSelect([
-  //       'user.id',
-  //       'user.name',
-  //       'user.phone',
-  //       'user.email',
-  //       'user.role',
-  //       'user.status',
-  //     ])
-  //     .where('kyc.id = :id', { id })
-  //     .getOne();
-
-  //   if (!kyc) {
-  //     throw new NotFoundException(`KYC with ID ${id} not found`);
-  //   }
-
-  //   // Deep merge for Aadhar
-  //   if (updateKycDto?.aadhar) {
-  //     kyc.aadhar = this.mergeDefined(kyc.aadhar || {}, updateKycDto.aadhar);
-  //   }
-
-  //   // Deep merge for PAN
-  //   if (updateKycDto?.pan) {
-  //     kyc.pan = this.mergeDefined(kyc.pan || {}, updateKycDto.pan);
-  //   }
-
-  //   if (updateKycDto?.status) {
-  //     if (updateKycDto.status === Status.PENDING) {
-  //       throw new BadRequestException(
-  //         'KYC status cannot be changed back to PENDING',
-  //       );
-  //     }
-  //     if (
-  //       updateKycDto.status === Status.VERIFIED ||
-  //       updateKycDto.status === Status.REJECTED
-  //     ) {
-  //       if (kyc.status !== Status.PENDING) {
-  //         throw new BadRequestException(
-  //           'Only PENDING KYC can be approved or rejected',
-  //         );
-  //       } else {
-  //         if (updateKycDto.status === Status.VERIFIED) {
-  //           if (
-  //             !kyc.aadhar ||
-  //             kyc.aadhar.documentStatus !== Status.VERIFIED ||
-  //             !kyc.pan ||
-  //             kyc.pan.documentStatus !== Status.VERIFIED
-  //           ) {
-  //             throw new BadRequestException(
-  //               'Both Aadhar and PAN documents must be VERIFIED to approve KYC',
-  //             );
-  //           }
-  //         }
-  //         console.log(kyc, 'kyc before status update');
-  //         console.log(updateKycDto.status, 'updateKycDto.status');
-  //         kyc.status = updateKycDto.status;
-  //         console.log(kyc.user.id, 'kyc.user.id 1');
-  //         await this.userService.update(kyc.user.id, {
-  //           status: updateKycDto.status,
-  //         });
-  //         console.log(kyc.user.id, 'kyc.user.id 2');
-  //       }
-  //     }
-  //   }
-
-  //   // Assign top-level non-undefined fields
-  //   const { aadhar, pan, ...otherFields } = updateKycDto;
-  //   for (const key in otherFields) {
-  //     if (otherFields[key] !== undefined) {
-  //       kyc[key] = otherFields[key];
-  //     }
-  //   }
-
-  //   await this.kycRepository.save(kyc);
-  //   return { message: 'KYC document updated successfully' };
-  // }
 
   async update(
     id: string,
@@ -337,38 +258,38 @@ export class KycService {
 
     // Handle KYC status update
     if (updateKycDto?.status) {
-      if (updateKycDto.status === Status.PENDING) {
-        throw new BadRequestException(
-          'KYC status cannot be changed back to PENDING',
-        );
-      }
-      if (
-        updateKycDto.status === Status.VERIFIED ||
-        updateKycDto.status === Status.REJECTED
-      ) {
-        if (kyc.status !== Status.PENDING) {
+      // if (updateKycDto.status === Status.PENDING) {
+      //   throw new BadRequestException(
+      //     'KYC status cannot be changed back to PENDING',
+      //   );
+      // }
+      // if (
+      //   updateKycDto.status === Status.VERIFIED ||
+      //   updateKycDto.status === Status.REJECTED
+      // ) {
+      // if (kyc.status !== Status.PENDING) {
+      //   throw new BadRequestException(
+      //     'Only PENDING KYC can be approved or rejected',
+      //   );
+      // } else {
+      if (updateKycDto.status === Status.VERIFIED) {
+        if (
+          !kyc.aadhar ||
+          kyc.aadhar.documentStatus !== Status.VERIFIED ||
+          !kyc.pan ||
+          kyc.pan.documentStatus !== Status.VERIFIED
+        ) {
           throw new BadRequestException(
-            'Only PENDING KYC can be approved or rejected',
+            'Both Aadhar and PAN documents must be VERIFIED to approve KYC',
           );
-        } else {
-          if (updateKycDto.status === Status.VERIFIED) {
-            if (
-              !kyc.aadhar ||
-              kyc.aadhar.documentStatus !== Status.VERIFIED ||
-              !kyc.pan ||
-              kyc.pan.documentStatus !== Status.VERIFIED
-            ) {
-              throw new BadRequestException(
-                'Both Aadhar and PAN documents must be VERIFIED to approve KYC',
-              );
-            }
-          }
-          kyc.status = updateKycDto.status;
-          await this.userService.update(kyc.user.id, {
-            status: updateKycDto.status,
-          });
         }
       }
+      kyc.status = updateKycDto.status;
+      await this.userService.update(kyc.user.id, {
+        status: updateKycDto.status,
+      });
+      // }
+      // }
     }
 
     // Assign top-level non-undefined fields

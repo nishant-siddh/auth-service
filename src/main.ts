@@ -13,11 +13,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: [
-      'http://localhost:3000', // Frontend
-      'http://localhost:3001', // Admin Panel
-      'http://localhost:3002', // Additional dev port
-    ],
+    origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
@@ -51,8 +47,8 @@ async function bootstrap() {
       'JWT-auth' // This name is used in @ApiSecurity() decorator
     )
     .build();
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('auth/api-doc', app, documentFactory);
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('auth/api-doc', app, document);
 
   const PORT = process.env.AUTH_SERVICE_PORT || 80;
   await app.listen(PORT, '0.0.0.0');

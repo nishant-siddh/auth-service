@@ -40,6 +40,7 @@ export class KycController {
   @ApiOperation({ summary: 'Get all KYC records for the current user' })
   @ApiResponse({ status: 200, description: 'List of KYC records', type: [Kyc] })
   findAllForUser(@Request() req) {
+    console.log(req.user, 'this is req');
     return this.kycService.findAllForUser(req.user);
   }
 

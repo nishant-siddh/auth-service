@@ -25,6 +25,7 @@ FROM node:18-alpine AS runner
 WORKDIR /app
 
 # Copy only production dependencies
+ENV NODE_ENV=production
 COPY package*.json ./
 RUN npm ci --omit=dev --legacy-peer-deps
 
